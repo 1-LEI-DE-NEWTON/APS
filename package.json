@@ -1,0 +1,18 @@
+{
+  "name": "aps-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/backend",
+    "apps/frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run start:dev -w apps/backend\" \"npm run dev -w apps/frontend\"",
+    "backend": "npm run start:dev -w apps/backend",
+    "frontend": "npm run dev -w apps/frontend",
+    "build": "npm run build -w apps/backend && npm run build -w apps/frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

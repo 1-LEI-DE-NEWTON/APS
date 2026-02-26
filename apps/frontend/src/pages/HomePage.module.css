@@ -1,0 +1,62 @@
+.wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #27272a;
+  background: #18181b;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.userRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.username {
+  color: #a1a1aa;
+  font-size: 0.875rem;
+}
+
+.logoutBtn {
+  padding: 0.4rem 0.75rem;
+  background: transparent;
+  border: 1px solid #3f3f46;
+  color: #e4e4e7;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.logoutBtn:hover {
+  background: #27272a;
+  border-color: #52525b;
+}
+
+.main {
+  flex: 1;
+  padding: 2rem 1.5rem;
+}
+
+.welcome {
+  font-size: 1.125rem;
+  margin: 0 0 0.5rem;
+}
+
+.hint {
+  color: #71717a;
+  font-size: 0.875rem;
+  margin: 0;
+}
