@@ -13,6 +13,37 @@ export type UserMe = {
   updatedAt: string;
 };
 
+export type Edital = {
+  id: number;
+  titulo: string;
+  orgao: string;
+  descricao: string;
+  url: string;
+  data_inicio: string | null;
+  data_fim: string | null;
+  notificado_novo: boolean;
+  notificado_prazo: boolean;
+  criado_em: string;
+};
+
+export type ListEditaisResponse = {
+  items: Edital[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+export type CollectionStatus = {
+  id: number;
+  started_at: string;
+  finished_at: string | null;
+  status: 'running' | 'success' | 'failed';
+  inserted_count: number;
+  notified_new_count: number;
+  notified_deadline_count: number;
+  error_message: string | null;
+};
+
 async function getStoredTokens(): Promise<{ accessToken: string; refreshToken: string } | null> {
   const access = localStorage.getItem('accessToken');
   const refresh = localStorage.getItem('refreshToken');
@@ -122,6 +153,46 @@ export async function createUser(username: string, password: string): Promise<Us
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message ?? 'Falha ao criar usuário');
+  }
+  return res.json();
+}
+
+export async function getEditais(params?: {
+  orgao?: string;
+  q?: string;
+  status?: 'abertos' | 'encerrados';
+  limit?: number;
+  offset?: number;
+}): Promise<ListEditaisResponse> {
+  const query = new URLSearchParams();
+  if (params?.orgao) query.set('orgao', params.orgao);
+  if (params?.q) query.set('q', params.q);
+  if (params?.status) query.set('status', params.status);
+  if (typeof params?.limit === 'number') query.set('limit', String(params.limit));
+  if (typeof params?.offset === 'number') query.set('offset', String(params.offset));
+  const suffix = query.toString() ? `?${query.toString()}` : '';
+  const res = await fetchWithAuth(`${API_BASE}/editais${suffix}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? 'Falha ao buscar editais');
+  }
+  return res.json();
+}
+
+export async function triggerCollection(): Promise<CollectionStatus> {
+  const res = await fetchWithAuth(`${API_BASE}/editais/coleta`, { method: 'POST' });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? 'Falha ao disparar coleta');
+  }
+  return res.json();
+}
+
+export async function getLatestCollectionStatus(): Promise<CollectionStatus | null> {
+  const res = await fetchWithAuth(`${API_BASE}/editais/coleta/status`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? 'Falha ao buscar status da coleta');
   }
   return res.json();
 }

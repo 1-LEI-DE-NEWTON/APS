@@ -48,6 +48,9 @@
 .main {
   flex: 1;
   padding: 2rem 1.5rem;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .welcome {
@@ -58,5 +61,106 @@
 .hint {
   color: #71717a;
   font-size: 0.875rem;
+  margin: 0 0 1rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.searchForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.input,
+.select {
+  height: 2.5rem;
+  border-radius: 8px;
+  border: 1px solid #3f3f46;
+  background: #18181b;
+  color: #f4f4f5;
+  padding: 0 0.8rem;
+}
+
+.input {
+  min-width: 260px;
+  flex: 1;
+}
+
+.primaryBtn {
+  height: 2.5rem;
+  border-radius: 8px;
+  border: 1px solid #52525b;
+  background: #27272a;
+  color: #fafafa;
+  padding: 0 0.9rem;
+  cursor: pointer;
+}
+
+.primaryBtn:hover {
+  background: #3f3f46;
+}
+
+.primaryBtn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.error {
+  color: #fca5a5;
+  margin: 0 0 1rem;
+}
+
+.list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.card {
+  border: 1px solid #27272a;
+  border-radius: 12px;
+  padding: 1rem;
+  background: #111113;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: baseline;
+}
+
+.cardHeader h2 {
   margin: 0;
+  font-size: 1rem;
+}
+
+.cardHeader span {
+  color: #a1a1aa;
+  font-size: 0.8rem;
+}
+
+.card p {
+  margin: 0.6rem 0;
+}
+
+.meta {
+  color: #a1a1aa;
+  font-size: 0.85rem;
+}
+
+.card a {
+  color: #93c5fd;
+  text-decoration: none;
+}
+
+.card a:hover {
+  text-decoration: underline;
 }
