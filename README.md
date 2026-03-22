@@ -2,13 +2,13 @@
 
 Interface para visualização de informações obtidas a partir de um sistema de **scraping de editais**. Backend NestJS + Frontend React, com autenticação JWT (access + refresh), logout e senhas com Argon2 + salt.
 
-O sistema de scraping (Python) será integrado ao monorepo em seguida; os dados coletados serão consumidos por esta API e exibidos no frontend.
+O sistema de scraping (Python) foi integrado ao monorepo; os dados coletados sao consumidos pela API Nest e exibidos no frontend.
 
 ## Estrutura
 
 - `apps/backend` — API NestJS, PostgreSQL, TypeORM
 - `apps/frontend` — React (Vite) + TypeScript — landing page (Login / Cadastre-se) e área logada para consulta aos editais
-- `apps/scraper` *(previsto)* — Sistema de scraping de editais em Python (a ser copiado/integrado ao monorepo)
+- `apps/scraper` — Servico Python (FastAPI) com scraping, persistencia e notificacoes WhatsApp
 
 ## Pré-requisitos
 
@@ -56,7 +56,9 @@ Na raiz do monorepo:
 
 ```bash
 npm install
-npm run dev       # sobe backend + frontend (recomendado)
+npm run dev       # sobe backend + frontend
+npm run scraper   # sobe servico Python (porta 8000)
+npm run dev:all   # sobe backend + frontend + scraper
 ```
 
 Ou separadamente:
