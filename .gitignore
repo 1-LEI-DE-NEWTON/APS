@@ -3,6 +3,8 @@ dist
 .env
 .env.local
 .venv
+venv
+apps/venv
 __pycache__
 *.pyc
 *.log

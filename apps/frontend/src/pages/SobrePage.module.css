@@ -1,0 +1,177 @@
+.wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 15% 15%, rgba(20, 184, 166, 0.18), transparent 22%),
+    radial-gradient(circle at 85% 12%, rgba(249, 115, 22, 0.16), transparent 20%),
+    radial-gradient(circle at 50% 80%, rgba(56, 189, 248, 0.12), transparent 28%);
+  pointer-events: none;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 2rem;
+  border-bottom: 1px solid rgba(171, 201, 184, 0.12);
+  background: rgba(7, 12, 13, 0.7);
+  backdrop-filter: blur(18px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.logo {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f6f7f3;
+  text-decoration: none;
+}
+
+.logo:hover {
+  color: #f6f7f3;
+  text-decoration: none;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.linkBtn {
+  padding: 0.6rem 1rem;
+  color: #d9ded9;
+  text-decoration: none;
+  border-radius: 999px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.linkBtn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  text-decoration: none;
+}
+
+.cadastroBtn {
+  padding: 0.75rem 1.1rem;
+  background: linear-gradient(135deg, #eab308 0%, #f97316 100%);
+  color: #18120b;
+  text-decoration: none;
+  font-weight: 700;
+  border-radius: 999px;
+  box-shadow: 0 12px 30px rgba(249, 115, 22, 0.22);
+}
+
+.cadastroBtn:hover {
+  color: #18120b;
+  text-decoration: none;
+  filter: brightness(1.03);
+}
+
+.main {
+  flex: 1;
+  width: min(1000px, calc(100% - 3rem));
+  margin: 0 auto;
+  padding: 3rem 0 4rem;
+  position: relative;
+  z-index: 1;
+}
+
+.hero {
+  padding: 2.2rem;
+  border-radius: 28px;
+  border: 1px solid rgba(171, 201, 184, 0.12);
+  background: rgba(10, 18, 19, 0.76);
+  backdrop-filter: blur(16px);
+}
+
+.eyebrow {
+  margin: 0 0 0.8rem;
+  color: #9dd9ff;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hero h1 {
+  margin: 0;
+  color: #f6f9f5;
+  font-size: clamp(1.8rem, 4.5vw, 3rem);
+  line-height: 1.1;
+  max-width: 22ch;
+}
+
+.hero p {
+  margin: 1rem 0 0;
+  color: #bdc9c1;
+  line-height: 1.7;
+  max-width: 70ch;
+}
+
+.grid {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  padding: 1.3rem;
+  border-radius: 22px;
+  border: 1px solid rgba(171, 201, 184, 0.12);
+  background: rgba(10, 18, 19, 0.76);
+}
+
+.card h2 {
+  margin: 0;
+  color: #f5f8f3;
+  font-size: 1.05rem;
+}
+
+.card p {
+  margin: 0.7rem 0 0;
+  color: #b4c2b9;
+  line-height: 1.65;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .header {
+    padding: 1rem 1.1rem;
+  }
+
+  .nav {
+    gap: 0.45rem;
+  }
+
+  .linkBtn,
+  .cadastroBtn {
+    padding-inline: 0.85rem;
+  }
+
+  .main {
+    width: min(100% - 1.4rem, 1000px);
+    padding-top: 1.8rem;
+  }
+
+  .hero {
+    padding: 1.4rem;
+    border-radius: 22px;
+  }
+}

@@ -1,23 +1,30 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { getEditais, getLatestCollectionStatus, triggerCollection, type CollectionStatus, type Edital } from '../lib/api';
 import styles from './HomePage.module.css';
 
 export default function HomePage() {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const [items, setItems] = useState<Edital[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingCollection, setLoadingCollection] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [orgao, setOrgao] = useState('');
   const [status, setStatus] = useState<'abertos' | 'encerrados'>('abertos');
   const [latestCollection, setLatestCollection] = useState<CollectionStatus | null>(null);
+  const visibleSources = new Set(items.map((item) => item.orgao)).size;
+
+  const truncateDescription = (text: string, maxLength = 180) => {
+    if (text.length <= maxLength) {
+      return text;
+    }
+    return `${text.slice(0, maxLength).trimEnd()}...`;
+  };
 
   const handleLogout = async () => {
     await logout();
-    navigate('/', { replace: true });
+    window.location.replace('/');
   };
 
   const loadData = async () => {
@@ -25,7 +32,12 @@ export default function HomePage() {
     setError(null);
     try {
       const [list, latest] = await Promise.all([
-        getEditais({ q: query.trim() || undefined, status, limit: 100 }),
+        getEditais({
+          q: query.trim() || undefined,
+          orgao: orgao || undefined,
+          status,
+          limit: 100,
+        }),
         getLatestCollectionStatus(),
       ]);
       setItems(list.items);
@@ -72,7 +84,10 @@ export default function HomePage() {
   return (
     <div className={styles.wrapper}>
       <header className={styles.header}>
-        <h1>Edital Notify</h1>
+        <div>
+          <p className={styles.headerLabel}>Painel operacional</p>
+          <h1>Edital Notify</h1>
+        </div>
         <div className={styles.userRow}>
           <span className={styles.username}>{user?.username}</span>
           <button type="button" onClick={handleLogout} className={styles.logoutBtn}>
@@ -81,10 +96,40 @@ export default function HomePage() {
         </div>
       </header>
       <main className={styles.main}>
-        <p className={styles.welcome}>
-          Olá, <strong>{user?.username}</strong>. Aqui você acompanha os editais.
-        </p>
-        <p className={styles.hint}>{collectionSummary}</p>
+        <section className={styles.heroPanel}>
+          <div>
+            <p className={styles.heroEyebrow}>Radar consolidado de oportunidades</p>
+            <p className={styles.welcome}>
+              Olá, <strong>{user?.username}</strong>. Aqui você acompanha o fluxo
+              de editais em uma visão única.
+            </p>
+            <p className={styles.hint}>{collectionSummary}</p>
+          </div>
+          <div className={styles.heroBadge}>
+            <strong>{items.length}</strong>
+            <span>editais no recorte atual</span>
+          </div>
+        </section>
+
+        <section className={styles.metricsGrid}>
+          <article className={styles.metricCard}>
+            <span className={styles.metricLabel}>Volume exibido</span>
+            <strong>{items.length}</strong>
+            <p>Itens filtrados na consulta atual.</p>
+          </article>
+          <article className={styles.metricCard}>
+            <span className={styles.metricLabel}>Fontes ativas</span>
+            <strong>{visibleSources}</strong>
+            <p>Orgaos presentes no resultado visivel.</p>
+          </article>
+          <article className={styles.metricCard}>
+            <span className={styles.metricLabel}>Ultima coleta</span>
+            <strong>{latestCollection?.status ?? 'sem historico'}</strong>
+            <p>
+              Inseridos: {latestCollection?.inserted_count ?? 0} | Novos avisos: {latestCollection?.notified_new_count ?? 0}
+            </p>
+          </article>
+        </section>
 
         <section className={styles.actions}>
           <form onSubmit={handleSearch} className={styles.searchForm}>
@@ -95,6 +140,16 @@ export default function HomePage() {
               onChange={(event) => setQuery(event.target.value)}
               className={styles.input}
             />
+            <select
+              value={orgao}
+              onChange={(event) => setOrgao(event.target.value)}
+              className={styles.select}
+            >
+              <option value="">Todas as fontes</option>
+              <option value="CNPq">CNPq</option>
+              <option value="FINEP">FINEP</option>
+              <option value="FUNCAP">FUNCAP</option>
+            </select>
             <select
               value={status}
               onChange={(event) => setStatus(event.target.value as 'abertos' | 'encerrados')}
@@ -127,19 +182,29 @@ export default function HomePage() {
               <p className={styles.hint}>Nenhum edital encontrado.</p>
             ) : (
               items.map((edital) => (
-                <article key={edital.id} className={styles.card}>
+                <a
+                  key={edital.id}
+                  href={edital.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={styles.card}
+                >
                   <div className={styles.cardHeader}>
-                    <h2>{edital.titulo}</h2>
-                    <span>{edital.orgao}</span>
+                    <div>
+                      <span className={styles.cardSource}>{edital.orgao}</span>
+                      <h2>{edital.titulo}</h2>
+                    </div>
+                    <span className={styles.cardTag}>{edital.data_fim ? 'Prazo definido' : 'Sem prazo informado'}</span>
                   </div>
-                  <p>{edital.descricao}</p>
+                  <p>{truncateDescription(edital.descricao)}</p>
                   <p className={styles.meta}>
                     Início: {edital.data_inicio ?? 'não informado'} | Fim: {edital.data_fim ?? 'não informado'}
                   </p>
-                  <a href={edital.url} target="_blank" rel="noreferrer">
-                    Abrir edital
-                  </a>
-                </article>
+                  <div className={styles.cardFooter}>
+                    <span className={styles.cardAction}>Abrir documento</span>
+                    <span className={styles.cardLinkHint}>Documento oficial</span>
+                  </div>
+                </a>
               ))
             )}
           </section>
