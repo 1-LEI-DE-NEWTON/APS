@@ -11,7 +11,7 @@
     "backend": "npm run start:dev -w apps/backend",
     "frontend": "npm run dev -w apps/frontend",
     "build": "npm run build -w apps/backend && npm run build -w apps/frontend",
-    "scraper": "python3 -m uvicorn app:app --host 0.0.0.0 --port 8000 --app-dir apps/scraper",
+    "scraper": "apps/scraper/.venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port 8000 --app-dir apps/scraper",
     "dev:all": "concurrently \"npm run start:dev -w apps/backend\" \"npm run dev -w apps/frontend\" \"npm run scraper\""
   },
   "devDependencies": {
