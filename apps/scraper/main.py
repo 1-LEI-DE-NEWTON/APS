@@ -1,5 +1,6 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
 
+from ai_enricher import enriquecer_edital_com_ia
 from db import (
     criar_tabela,
     edital_ja_existe,
@@ -24,12 +25,14 @@ def verificar_novos_editais():
         if edital_ja_existe(edital):
             continue
 
-        inserted = salvar_edital(edital)
+        edital_enriquecido = enriquecer_edital_com_ia(edital)
+
+        inserted = salvar_edital(edital_enriquecido)
         if inserted:
             inserted_count += 1
 
-        if notificar_edital(edital):
-            marcar_notificado(edital['url'], tipo='novo')
+        if notificar_edital(edital_enriquecido):
+            marcar_notificado(edital_enriquecido['url'], tipo='novo')
             notified_new_count += 1
 
     return inserted_count, notified_new_count

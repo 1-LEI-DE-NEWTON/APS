@@ -34,6 +34,8 @@ def criar_tabela():
             titulo TEXT,
             orgao TEXT,
             descricao TEXT,
+            resumo_ia TEXT,
+            tags_ia TEXT[],
             url TEXT UNIQUE,
             data_inicio DATE,
             data_fim DATE,
@@ -43,6 +45,8 @@ def criar_tabela():
         );
         '''
     )
+    cur.execute('ALTER TABLE editais ADD COLUMN IF NOT EXISTS resumo_ia TEXT;')
+    cur.execute('ALTER TABLE editais ADD COLUMN IF NOT EXISTS tags_ia TEXT[];')
     cur.execute(
         '''
         CREATE TABLE IF NOT EXISTS coletas (
@@ -144,16 +148,19 @@ def edital_ja_existe(edital):
 def salvar_edital(edital):
     conn = conectar()
     cur = conn.cursor()
+    tags_ia = edital.get('tags_ia') or None
     cur.execute(
         '''
-        INSERT INTO editais (titulo, orgao, descricao, url, data_inicio, data_fim)
-        VALUES (%s, %s, %s, %s, %s, %s)
+        INSERT INTO editais (titulo, orgao, descricao, resumo_ia, tags_ia, url, data_inicio, data_fim)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (url) DO NOTHING;
         ''',
         (
             edital['titulo'],
             edital['orgao'],
             edital['descricao'],
+            edital.get('resumo_ia'),
+            tags_ia,
             edital['url'],
             _converter_data(edital['data_inicio']),
             _converter_data(edital['data_fim']),
@@ -209,7 +216,8 @@ def listar_editais(orgao=None, q=None, status=None, limit=50, offset=0):
         values.append(f'%{orgao}%')
 
     if q:
-        where_parts.append('(titulo ILIKE %s OR descricao ILIKE %s)')
+        where_parts.append('(titulo ILIKE %s OR descricao ILIKE %s OR COALESCE(resumo_ia, \'\') ILIKE %s)')
+        values.append(f'%{q}%')
         values.append(f'%{q}%')
         values.append(f'%{q}%')
 

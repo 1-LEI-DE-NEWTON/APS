@@ -4,6 +4,8 @@ Interface para visualização de informações obtidas a partir de um sistema de
 
 O sistema de scraping (Python) foi integrado ao monorepo; os dados coletados sao consumidos pela API Nest e exibidos no frontend.
 
+O scraper tambem pode enriquecer os editais com IA local (resumo e tags) usando Ollama + `mistral:latest`.
+
 ## Estrutura
 
 - `apps/backend` — API NestJS, PostgreSQL, TypeORM
@@ -108,3 +110,21 @@ Ex.: `src/api/user/`, `src/api/auth/`.
 - **`/login`** — Tela de login; **`/login?cadastro`** abre já no modo “Criar conta”.
 - **`/app`** — Área autenticada (editais); usuário logado que acessa `/` é redirecionado para `/app`.
 - Logout redireciona para a landing (`/`).
+
+## IA local (resumo e tags)
+
+No `apps/scraper/.env`:
+
+```bash
+AI_ENABLED=true
+AI_PROVIDER=ollama
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=mistral:latest
+AI_TIMEOUT_SECONDS=15
+```
+
+Com Ollama ativo:
+
+```bash
+ollama pull mistral:latest
+```

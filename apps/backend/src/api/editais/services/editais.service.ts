@@ -7,6 +7,8 @@ type Edital = {
   titulo: string;
   orgao: string;
   descricao: string;
+  resumo_ia: string | null;
+  tags_ia: string[] | null;
   url: string;
   data_inicio: string | null;
   data_fim: string | null;

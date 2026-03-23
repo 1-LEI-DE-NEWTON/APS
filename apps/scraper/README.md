@@ -24,3 +24,29 @@ python3 -m uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ## Variaveis de ambiente
 
 Veja `.env.example`.
+
+## IA local (opcional)
+
+O scraper pode enriquecer cada edital com:
+
+- `resumo_ia` (resumo curto)
+- `tags_ia` (ate 5 tags)
+
+Configuracao:
+
+1. Suba o Ollama localmente.
+2. Baixe o modelo:
+
+```bash
+ollama pull mistral:latest
+```
+
+3. No `.env`, ajuste:
+
+```bash
+AI_ENABLED=true
+AI_PROVIDER=ollama
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=mistral:latest
+AI_TIMEOUT_SECONDS=15
+```

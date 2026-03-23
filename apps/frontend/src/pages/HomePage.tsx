@@ -196,7 +196,23 @@ export default function HomePage() {
                     </div>
                     <span className={styles.cardTag}>{edital.data_fim ? 'Prazo definido' : 'Sem prazo informado'}</span>
                   </div>
-                  <p>{truncateDescription(edital.descricao)}</p>
+                  {edital.resumo_ia ? (
+                    <>
+                      <p className={styles.aiSummary}>{truncateDescription(edital.resumo_ia, 220)}</p>
+                      <span className={styles.aiBadge}>Resumo gerado por IA</span>
+                    </>
+                  ) : (
+                    <p>{truncateDescription(edital.descricao)}</p>
+                  )}
+                  {edital.tags_ia && edital.tags_ia.length > 0 ? (
+                    <div className={styles.tagsRow}>
+                      {edital.tags_ia.map((tag) => (
+                        <span key={`${edital.id}-${tag}`} className={styles.aiTag}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                   <p className={styles.meta}>
                     Início: {edital.data_inicio ?? 'não informado'} | Fim: {edital.data_fim ?? 'não informado'}
                   </p>
