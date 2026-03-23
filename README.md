@@ -4,7 +4,7 @@ Interface para visualização de informações obtidas a partir de um sistema de
 
 O sistema de scraping (Python) foi integrado ao monorepo; os dados coletados sao consumidos pela API Nest e exibidos no frontend.
 
-O scraper tambem pode enriquecer os editais com IA local (resumo e tags) usando Ollama + `mistral:latest`.
+O scraper tambem pode enriquecer os editais com IA local (resumo e tags) usando Ollama + `granite3-dense:2b`.
 
 ## Estrutura
 
@@ -119,12 +119,12 @@ No `apps/scraper/.env`:
 AI_ENABLED=true
 AI_PROVIDER=ollama
 OLLAMA_URL=http://localhost:11434
-OLLAMA_MODEL=mistral:latest
+OLLAMA_MODEL=granite3-dense:2b
 AI_TIMEOUT_SECONDS=15
 ```
 
 Com Ollama ativo:
 
 ```bash
-ollama pull mistral:latest
+ollama pull granite3-dense:2b
 ```

@@ -7,7 +7,7 @@ import requests
 AI_ENABLED = os.getenv('AI_ENABLED', 'false').lower() == 'true'
 AI_PROVIDER = os.getenv('AI_PROVIDER', 'ollama').lower()
 OLLAMA_URL = os.getenv('OLLAMA_URL', 'http://localhost:11434').rstrip('/')
-OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'mistral:latest')
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'granite3-dense:2b')
 AI_TIMEOUT_SECONDS = float(os.getenv('AI_TIMEOUT_SECONDS', '15'))
 
 

@@ -38,7 +38,7 @@ Configuracao:
 2. Baixe o modelo:
 
 ```bash
-ollama pull mistral:latest
+ollama pull granite3-dense:2b
 ```
 
 3. No `.env`, ajuste:
@@ -47,6 +47,6 @@ ollama pull mistral:latest
 AI_ENABLED=true
 AI_PROVIDER=ollama
 OLLAMA_URL=http://localhost:11434
-OLLAMA_MODEL=mistral:latest
+OLLAMA_MODEL=granite3-dense:2b
 AI_TIMEOUT_SECONDS=15
 ```
