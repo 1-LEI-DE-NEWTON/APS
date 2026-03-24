@@ -22,6 +22,10 @@ export class UserRepository {
     return this.repo.save(user);
   }
 
+  async updateProfileKeywords(userId: string, profileKeywords: string[]): Promise<void> {
+    await this.repo.update({ id: userId }, { profileKeywords });
+  }
+
   async create(data: Partial<User>): Promise<User> {
     const user = this.repo.create(data);
     return this.repo.save(user);

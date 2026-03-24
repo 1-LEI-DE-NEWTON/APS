@@ -9,13 +9,14 @@ O scraper tambem pode enriquecer os editais com IA local (resumo e tags) usando 
 ## Estrutura
 
 - `apps/backend` — API NestJS, PostgreSQL, TypeORM
-- `apps/frontend` — React (Vite) + TypeScript — landing page (Login / Cadastre-se) e área logada para consulta aos editais
+- `apps/frontend` — React (Vite) + TypeScript — landing page, página `/sobre` e área logada
 - `apps/scraper` — Servico Python (FastAPI) com scraping, persistencia e notificacoes WhatsApp
 
 ## Pré-requisitos
 
 - Node.js 18+
 - PostgreSQL rodando localmente (ou via Docker)
+- Python 3.10+ (para `apps/scraper`)
 
 ## Configuração
 
@@ -34,6 +35,16 @@ Crie o banco e rode a API (o TypeORM sobe com `synchronize: true` em desenvolvim
 
 ```sql
 CREATE DATABASE aps;
+```
+
+### Scraper (Python)
+
+```bash
+cd apps/scraper
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
 ```
 
 ### Frontend
@@ -59,7 +70,7 @@ Na raiz do monorepo:
 ```bash
 npm install
 npm run dev       # sobe backend + frontend
-npm run scraper   # sobe servico Python (porta 8000)
+npm run scraper   # sobe servico Python (porta 8000) usando apps/scraper/.venv
 npm run dev:all   # sobe backend + frontend + scraper
 ```
 
@@ -90,25 +101,29 @@ npm run dev -w apps/frontend
 
 Senhas são armazenadas com **Argon2** (argon2id) e **salt no final** (password + salt antes de hashear); o salt é guardado por usuário na tabela `users`.
 
-## Arquitetura do Backend
+## Endpoints principais (backend)
 
-Cada entidade segue a pasta em `src/api/<entidade>/`:
+- `GET /editais` — lista editais com filtros (`orgao`, `q`, `status`, `limit`, `offset`).
+- `POST /editais/coleta` — dispara coleta imediata no scraper.
+- `GET /editais/coleta/status` — status da última coleta.
+- `GET /user/profile` — lê palavras-chave de perfil de relevância.
+- `PATCH /user/profile` — atualiza palavras-chave do perfil.
+- `GET /ops/health` — health agregado de backend + scraper.
+- `GET /ops/metrics` — métricas de integração backend->scraper.
 
-- `entities/` — entidades TypeORM
-- `repository/` — repositórios
-- `services/` — regras de negócio
-- `dtos/` — DTOs e validação
-- `docs/` — decorators Swagger
-- `<entidade>.controller.ts`
-- `<entidade>.module.ts`
-
-Ex.: `src/api/user/`, `src/api/auth/`.
+Todos os endpoints acima (exceto auth/registro/login) exigem JWT.
 
 ## Frontend (fluxo)
 
-- **`/`** — Landing page com botões **Login** e **Cadastre-se** no topo à direita; texto sobre visualização de editais via scraping.
+- **`/`** — Landing page pública.
+- **`/sobre`** — Página institucional do projeto.
 - **`/login`** — Tela de login; **`/login?cadastro`** abre já no modo “Criar conta”.
-- **`/app`** — Área autenticada (editais); usuário logado que acessa `/` é redirecionado para `/app`.
+- **`/app`** — Área autenticada:
+  - filtros dinâmicos (sem botão "Filtrar")
+  - atualização manual de coleta
+  - perfil de relevância por palavras-chave
+  - score de relevância por edital
+  - status operacional do scraper
 - Logout redireciona para a landing (`/`).
 
 ## IA local (resumo e tags)
@@ -128,3 +143,5 @@ Com Ollama ativo:
 ```bash
 ollama pull granite3-dense:2b
 ```
+
+Observação: a IA é opcional. Se `AI_ENABLED=false`, o sistema continua funcionando sem resumo/tags gerados.

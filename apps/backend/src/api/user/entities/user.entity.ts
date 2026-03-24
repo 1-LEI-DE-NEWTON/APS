@@ -20,6 +20,14 @@ export class User {
   @Column({ name: 'password_salt', length: 64 })
   passwordSalt: string;
 
+  @Column({
+    name: 'profile_keywords',
+    type: 'text',
+    array: true,
+    default: () => 'ARRAY[]::text[]',
+  })
+  profileKeywords: string[];
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

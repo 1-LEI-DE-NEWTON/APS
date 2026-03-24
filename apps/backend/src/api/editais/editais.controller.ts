@@ -1,6 +1,8 @@
 import { Controller, Get, Param, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { User } from '../user/entities/user.entity';
 import { QueryEditaisDto } from './dtos/query-editais.dto';
 import { EditaisService } from './services/editais.service';
 
@@ -13,8 +15,8 @@ export class EditaisController {
 
   @Get()
   @ApiOperation({ summary: 'Lista editais com filtros opcionais' })
-  async list(@Query() query: QueryEditaisDto) {
-    return this.editaisService.list(query);
+  async list(@CurrentUser() user: User, @Query() query: QueryEditaisDto) {
+    return this.editaisService.list(user, query);
   }
 
   @Post('coleta')

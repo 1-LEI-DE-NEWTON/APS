@@ -25,6 +25,7 @@ export class UserService {
       username: dto.username,
       passwordHash,
       passwordSalt: salt,
+      profileKeywords: [],
     });
     const { passwordHash: _, passwordSalt: __, ...result } = user;
     return result;
@@ -41,5 +42,19 @@ export class UserService {
   async validatePassword(user: User, plainPassword: string): Promise<boolean> {
     const passwordWithSalt = plainPassword + user.passwordSalt;
     return argon2.verify(user.passwordHash, passwordWithSalt);
+  }
+
+  async getProfileKeywords(userId: string): Promise<string[]> {
+    const user = await this.userRepository.findById(userId);
+    if (!user?.profileKeywords) return [];
+    return user.profileKeywords;
+  }
+
+  async updateProfileKeywords(userId: string, profileKeywords: string[]): Promise<string[]> {
+    const normalized = Array.from(
+      new Set(profileKeywords.map((entry) => entry.trim()).filter((entry) => entry.length > 0))
+    );
+    await this.userRepository.updateProfileKeywords(userId, normalized);
+    return normalized;
   }
 }

@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { getEditais, getLatestCollectionStatus, triggerCollection, type CollectionStatus, type Edital } from '../lib/api';
+import {
+  getEditais,
+  getLatestCollectionStatus,
+  getOpsHealth,
+  getUserProfile,
+  triggerCollection,
+  updateUserProfile,
+  type CollectionStatus,
+  type Edital,
+  type OpsHealthResponse,
+} from '../lib/api';
 import styles from './HomePage.module.css';
 
 export default function HomePage() {
@@ -10,9 +20,14 @@ export default function HomePage() {
   const [loadingCollection, setLoadingCollection] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [orgao, setOrgao] = useState('');
   const [status, setStatus] = useState<'abertos' | 'encerrados'>('abertos');
   const [latestCollection, setLatestCollection] = useState<CollectionStatus | null>(null);
+  const [opsHealth, setOpsHealth] = useState<OpsHealthResponse | null>(null);
+  const [profileKeywords, setProfileKeywords] = useState<string[]>([]);
+  const [profileInput, setProfileInput] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
   const visibleSources = new Set(items.map((item) => item.orgao)).size;
 
   const truncateDescription = (text: string, maxLength = 180) => {
@@ -27,21 +42,17 @@ export default function HomePage() {
     window.location.replace('/');
   };
 
-  const loadData = async () => {
+  const loadItems = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [list, latest] = await Promise.all([
-        getEditais({
-          q: query.trim() || undefined,
-          orgao: orgao || undefined,
-          status,
-          limit: 100,
-        }),
-        getLatestCollectionStatus(),
-      ]);
+      const list = await getEditais({
+        q: debouncedQuery || undefined,
+        orgao: orgao || undefined,
+        status,
+        limit: 100,
+      });
       setItems(list.items);
-      setLatestCollection(latest);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao carregar dados';
       setError(message);
@@ -51,14 +62,36 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    void loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status]);
+    const timeout = window.setTimeout(() => {
+      setDebouncedQuery(query.trim());
+    }, 350);
+    return () => window.clearTimeout(timeout);
+  }, [query]);
 
-  const handleSearch = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    await loadData();
+  const loadMeta = async () => {
+    try {
+      const [latest, profile, health] = await Promise.all([
+        getLatestCollectionStatus(),
+        getUserProfile(),
+        getOpsHealth().catch(() => null),
+      ]);
+      setLatestCollection(latest);
+      setProfileKeywords(profile.profileKeywords);
+      setProfileInput(profile.profileKeywords.join(', '));
+      setOpsHealth(health);
+    } catch {
+      // erros de metadados nao devem bloquear listagem
+    }
   };
+
+  useEffect(() => {
+    void loadItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQuery, orgao, status]);
+
+  useEffect(() => {
+    void loadMeta();
+  }, []);
 
   const handleRunCollection = async () => {
     setLoadingCollection(true);
@@ -66,12 +99,33 @@ export default function HomePage() {
     try {
       const latest = await triggerCollection();
       setLatestCollection(latest);
-      await loadData();
+      await Promise.all([loadItems(), loadMeta()]);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao executar coleta';
       setError(message);
     } finally {
       setLoadingCollection(false);
+    }
+  };
+
+  const handleSaveProfile = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSavingProfile(true);
+    setError(null);
+    try {
+      const keywords = profileInput
+        .split(',')
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0);
+      const response = await updateUserProfile(keywords);
+      setProfileKeywords(response.profileKeywords);
+      setProfileInput(response.profileKeywords.join(', '));
+      await loadItems();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao salvar perfil';
+      setError(message);
+    } finally {
+      setSavingProfile(false);
     }
   };
 
@@ -123,16 +177,58 @@ export default function HomePage() {
             <p>Orgaos presentes no resultado visivel.</p>
           </article>
           <article className={styles.metricCard}>
-            <span className={styles.metricLabel}>Ultima coleta</span>
-            <strong>{latestCollection?.status ?? 'sem historico'}</strong>
+            <span className={styles.metricLabel}>Status operacional</span>
+            <strong>{opsHealth?.scraper.status ?? 'indisponivel'}</strong>
             <p>
-              Inseridos: {latestCollection?.inserted_count ?? 0} | Novos avisos: {latestCollection?.notified_new_count ?? 0}
+              Latência scraper: {opsHealth?.scraper.latencyMs ?? '--'} ms | Última coleta:{' '}
+              {latestCollection?.status ?? 'sem historico'}
             </p>
           </article>
         </section>
 
+        <section className={styles.profileSection}>
+          <div className={styles.profileHeader}>
+            <span className={styles.metricLabel}>Perfil de relevância</span>
+            <p className={styles.hint}>
+              Palavras-chave separadas por vírgula para priorizar os editais mais aderentes.
+            </p>
+          </div>
+          <form onSubmit={handleSaveProfile} className={styles.profileForm}>
+            <input
+              type="text"
+              value={profileInput}
+              onChange={(event) => setProfileInput(event.target.value)}
+              placeholder="Ex.: inovação, biotecnologia, bolsas, extensão"
+              className={styles.input}
+            />
+            <button type="submit" className={styles.primaryBtn} disabled={savingProfile}>
+              {savingProfile ? 'Salvando...' : 'Salvar perfil'}
+            </button>
+          </form>
+          {profileKeywords.length > 0 ? (
+            <div className={styles.tagsRow}>
+              {profileKeywords.map((tag) => (
+                <span key={`profile-${tag}`} className={styles.aiTag}>
+                  {tag}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </section>
+
+        <section className={styles.collectionActions}>
+          <button
+            type="button"
+            onClick={handleRunCollection}
+            className={styles.primaryBtn}
+            disabled={loadingCollection}
+          >
+            {loadingCollection ? 'Coletando...' : 'Atualizar Agora'}
+          </button>
+        </section>
+
         <section className={styles.actions}>
-          <form onSubmit={handleSearch} className={styles.searchForm}>
+          <div className={styles.searchForm}>
             <input
               type="text"
               placeholder="Buscar por título ou descrição"
@@ -158,18 +254,7 @@ export default function HomePage() {
               <option value="abertos">Abertos</option>
               <option value="encerrados">Encerrados</option>
             </select>
-            <button type="submit" className={styles.primaryBtn}>
-              Filtrar
-            </button>
-          </form>
-          <button
-            type="button"
-            onClick={handleRunCollection}
-            className={styles.primaryBtn}
-            disabled={loadingCollection}
-          >
-            {loadingCollection ? 'Coletando...' : 'Atualizar Agora'}
-          </button>
+          </div>
         </section>
 
         {error ? <p className={styles.error}>{error}</p> : null}
@@ -194,7 +279,12 @@ export default function HomePage() {
                       <span className={styles.cardSource}>{edital.orgao}</span>
                       <h2>{edital.titulo}</h2>
                     </div>
-                    <span className={styles.cardTag}>{edital.data_fim ? 'Prazo definido' : 'Sem prazo informado'}</span>
+                    <div className={styles.cardTagGroup}>
+                      {typeof edital.relevance_score === 'number' ? (
+                        <span className={styles.scoreTag}>{edital.relevance_score}% relevante</span>
+                      ) : null}
+                      <span className={styles.cardTag}>{edital.data_fim ? 'Prazo definido' : 'Sem prazo informado'}</span>
+                    </div>
                   </div>
                   {edital.resumo_ia ? (
                     <>

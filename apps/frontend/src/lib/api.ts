@@ -9,6 +9,7 @@ export type TokenResponse = {
 export type UserMe = {
   id: string;
   username: string;
+  profileKeywords: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -26,6 +27,7 @@ export type Edital = {
   notificado_novo: boolean;
   notificado_prazo: boolean;
   criado_em: string;
+  relevance_score?: number | null;
 };
 
 export type ListEditaisResponse = {
@@ -44,6 +46,23 @@ export type CollectionStatus = {
   notified_new_count: number;
   notified_deadline_count: number;
   error_message: string | null;
+};
+
+export type UserProfileResponse = {
+  profileKeywords: string[];
+};
+
+export type OpsHealthResponse = {
+  status: 'ok' | 'degraded';
+  timestamp: string;
+  backend: { status: 'ok' };
+  scraper: {
+    status: 'up' | 'down';
+    latencyMs?: number;
+    httpStatus?: number;
+    error?: string;
+  };
+  latestCollection: CollectionStatus | null;
 };
 
 async function getStoredTokens(): Promise<{ accessToken: string; refreshToken: string } | null> {
@@ -146,6 +165,28 @@ export async function getMe(): Promise<UserMe> {
   return res.json();
 }
 
+export async function getUserProfile(): Promise<UserProfileResponse> {
+  const res = await fetchWithAuth(`${API_BASE}/user/profile`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? 'Falha ao buscar perfil');
+  }
+  return res.json();
+}
+
+export async function updateUserProfile(profileKeywords: string[]): Promise<UserProfileResponse> {
+  const res = await fetchWithAuth(`${API_BASE}/user/profile`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ profileKeywords }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? 'Falha ao atualizar perfil');
+  }
+  return res.json();
+}
+
 export async function createUser(username: string, password: string): Promise<UserMe> {
   const res = await fetch(`${API_BASE}/user`, {
     method: 'POST',
@@ -195,6 +236,15 @@ export async function getLatestCollectionStatus(): Promise<CollectionStatus | nu
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message ?? 'Falha ao buscar status da coleta');
+  }
+  return res.json();
+}
+
+export async function getOpsHealth(): Promise<OpsHealthResponse> {
+  const res = await fetchWithAuth(`${API_BASE}/ops/health`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? 'Falha ao buscar health operacional');
   }
   return res.json();
 }
