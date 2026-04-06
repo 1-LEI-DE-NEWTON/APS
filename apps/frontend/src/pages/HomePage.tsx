@@ -7,6 +7,7 @@ import {
   getUserProfile,
   triggerCollection,
   updateUserProfile,
+  toggleFavorite,
   type CollectionStatus,
   type Edital,
   type OpsHealthResponse,
@@ -23,6 +24,7 @@ export default function HomePage() {
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [orgao, setOrgao] = useState('');
   const [status, setStatus] = useState<'abertos' | 'encerrados'>('abertos');
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [latestCollection, setLatestCollection] = useState<CollectionStatus | null>(null);
   const [opsHealth, setOpsHealth] = useState<OpsHealthResponse | null>(null);
   const [profileKeywords, setProfileKeywords] = useState<string[]>([]);
@@ -50,6 +52,7 @@ export default function HomePage() {
         q: debouncedQuery || undefined,
         orgao: orgao || undefined,
         status,
+        favoritesOnly,
         limit: 100,
       });
       setItems(list.items);
@@ -87,7 +90,7 @@ export default function HomePage() {
   useEffect(() => {
     void loadItems();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedQuery, orgao, status]);
+  }, [debouncedQuery, orgao, status, favoritesOnly]);
 
   useEffect(() => {
     void loadMeta();
@@ -105,6 +108,23 @@ export default function HomePage() {
       setError(message);
     } finally {
       setLoadingCollection(false);
+    }
+  };
+
+  const handleToggleFavorite = async (e: React.MouseEvent, id: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const { isFavorite } = await toggleFavorite(id);
+      setItems((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, isFavorite } : item))
+      );
+      if (favoritesOnly && !isFavorite) {
+        setItems((prev) => prev.filter((item) => item.id !== id));
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao favoritar';
+      setError(message);
     }
   };
 
@@ -254,6 +274,14 @@ export default function HomePage() {
               <option value="abertos">Abertos</option>
               <option value="encerrados">Encerrados</option>
             </select>
+            <label className={styles.checkboxContainer}>
+              <input
+                type="checkbox"
+                checked={favoritesOnly}
+                onChange={(e) => setFavoritesOnly(e.target.checked)}
+              />
+              Apenas favoritos
+            </label>
           </div>
         </section>
 
@@ -280,6 +308,14 @@ export default function HomePage() {
                       <h2>{edital.titulo}</h2>
                     </div>
                     <div className={styles.cardTagGroup}>
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleFavorite(e, edital.id)}
+                        className={`${styles.favoriteBtn} ${edital.isFavorite ? styles.favoriteActive : ''}`}
+                        title={edital.isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+                      >
+                        {edital.isFavorite ? '★' : '☆'}
+                      </button>
                       {typeof edital.relevance_score === 'number' ? (
                         <span className={styles.scoreTag}>{edital.relevance_score}% relevante</span>
                       ) : null}

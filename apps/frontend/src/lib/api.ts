@@ -28,6 +28,7 @@ export type Edital = {
   notificado_prazo: boolean;
   criado_em: string;
   relevance_score?: number | null;
+  isFavorite?: boolean;
 };
 
 export type ListEditaisResponse = {
@@ -204,6 +205,7 @@ export async function getEditais(params?: {
   orgao?: string;
   q?: string;
   status?: 'abertos' | 'encerrados';
+  favoritesOnly?: boolean;
   limit?: number;
   offset?: number;
 }): Promise<ListEditaisResponse> {
@@ -211,6 +213,7 @@ export async function getEditais(params?: {
   if (params?.orgao) query.set('orgao', params.orgao);
   if (params?.q) query.set('q', params.q);
   if (params?.status) query.set('status', params.status);
+  if (params?.favoritesOnly) query.set('favoritesOnly', 'true');
   if (typeof params?.limit === 'number') query.set('limit', String(params.limit));
   if (typeof params?.offset === 'number') query.set('offset', String(params.offset));
   const suffix = query.toString() ? `?${query.toString()}` : '';
@@ -218,6 +221,17 @@ export async function getEditais(params?: {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message ?? 'Falha ao buscar editais');
+  }
+  return res.json();
+}
+
+export async function toggleFavorite(editalId: number): Promise<{ isFavorite: boolean }> {
+  const res = await fetchWithAuth(`${API_BASE}/editais/${editalId}/favorite`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? 'Falha ao favoritar edital');
   }
   return res.json();
 }

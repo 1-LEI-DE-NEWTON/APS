@@ -440,6 +440,47 @@
   font-size: 0.78rem;
 }
 
+.favoriteBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease, transform 0.2s ease;
+  color: #555;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.favoriteBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.favoriteActive {
+  color: #facc15 !important;
+  text-shadow: 0 0 10px rgba(250, 204, 21, 0.4);
+}
+
+.checkboxContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #d0d8d2;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0 0.5rem;
+}
+
+.checkboxContainer input {
+  cursor: pointer;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
 @media (max-width: 920px) {
   .heroPanel,
   .metricsGrid {
