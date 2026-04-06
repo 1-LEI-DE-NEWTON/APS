@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class QueryEditaisDto {
   @IsOptional()
@@ -13,6 +13,11 @@ export class QueryEditaisDto {
   @IsOptional()
   @IsIn(['abertos', 'encerrados'])
   status?: 'abertos' | 'encerrados';
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  favoritesOnly?: boolean;
 
   @IsOptional()
   @Transform(({ value }) => Number(value))
