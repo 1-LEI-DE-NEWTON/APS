@@ -10,22 +10,22 @@ export class Edital {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ type: 'text', nullable: true })
   titulo: string;
 
-  @Column()
+  @Column({ type: 'text', nullable: true })
   orgao: string;
 
-  @Column()
+  @Column({ type: 'text', nullable: true })
   descricao: string;
 
-  @Column({ name: 'resumo_ia', nullable: true })
+  @Column({ name: 'resumo_ia', type: 'text', nullable: true })
   resumoIa: string | null;
 
   @Column({ name: 'tags_ia', type: 'text', array: true, nullable: true })
   tagsIa: string[] | null;
 
-  @Column({ unique: true })
+  @Column({ type: 'text', unique: true, nullable: true })
   url: string;
 
   @Column({ name: 'data_inicio', type: 'date', nullable: true })
@@ -34,12 +34,12 @@ export class Edital {
   @Column({ name: 'data_fim', type: 'date', nullable: true })
   dataFim: string | null;
 
-  @Column({ name: 'notificado_novo', default: false })
+  @Column({ name: 'notificado_novo', type: 'boolean', default: false, nullable: true })
   notificadoNovo: boolean;
 
-  @Column({ name: 'notificado_prazo', default: false })
+  @Column({ name: 'notificado_prazo', type: 'boolean', default: false, nullable: true })
   notificadoPrazo: boolean;
 
-  @CreateDateColumn({ name: 'criado_em' })
+  @CreateDateColumn({ name: 'criado_em', type: 'timestamp without time zone', default: () => 'CURRENT_TIMESTAMP' })
   criadoEm: Date;
 }
