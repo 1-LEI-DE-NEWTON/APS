@@ -1,8 +1,12 @@
 import { Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, In } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 import { OpsMetricsService } from '../../ops/services/ops-metrics.service';
 import { QueryEditaisDto } from '../dtos/query-editais.dto';
+import { Edital as EditalEntity } from '../entities/edital.entity';
+import { UserFavorite } from '../../user/entities/user-favorite.entity';
 
 type Edital = {
   id: number;
@@ -18,6 +22,7 @@ type Edital = {
   notificado_prazo: boolean;
   criado_em: string;
   relevance_score?: number | null;
+  isFavorite?: boolean;
 };
 
 type ListEditaisResponse = {
@@ -42,7 +47,11 @@ type CollectionStatus = {
 export class EditaisService {
   constructor(
     private readonly configService: ConfigService,
-    private readonly opsMetricsService: OpsMetricsService
+    private readonly opsMetricsService: OpsMetricsService,
+    @InjectRepository(EditalEntity)
+    private readonly editalRepository: Repository<EditalEntity>,
+    @InjectRepository(UserFavorite)
+    private readonly userFavoriteRepository: Repository<UserFavorite>,
   ) {}
 
   private get scraperBaseUrl(): string {
@@ -50,6 +59,12 @@ export class EditaisService {
   }
 
   async list(user: User, query: QueryEditaisDto): Promise<ListEditaisResponse> {
+    const favorites = await this.userFavoriteRepository.find({
+      where: { userId: user.id },
+      select: ['editalId'],
+    });
+    const favoriteIds = new Set(favorites.map((f) => f.editalId));
+
     const params = new URLSearchParams();
     if (query.orgao) params.set('orgao', query.orgao);
     if (query.q) params.set('q', query.q);
@@ -67,11 +82,17 @@ export class EditaisService {
 
     payload.items = payload.items.map((item) => ({
       ...item,
+      isFavorite: favoriteIds.has(item.id),
       relevance_score:
         profileKeywords.length > 0 ? this.calculateRelevanceScore(item, profileKeywords) : null,
     }));
+
+    if (query.favoritesOnly) {
+      payload.items = payload.items.filter((item) => item.isFavorite);
+    }
+
     payload.items = this.deduplicateFuncapItems(payload.items);
-    payload.total = payload.items.length;
+    payload.total = query.favoritesOnly ? payload.items.length : payload.total;
 
     if (profileKeywords.length > 0) {
       payload.items.sort((a, b) => {
@@ -85,6 +106,28 @@ export class EditaisService {
     }
 
     return payload;
+  }
+
+  async toggleFavorite(user: User, editalId: number): Promise<{ isFavorite: boolean }> {
+    const existing = await this.userFavoriteRepository.findOne({
+      where: { userId: user.id, editalId },
+    });
+
+    if (existing) {
+      await this.userFavoriteRepository.remove(existing);
+      return { isFavorite: false };
+    }
+
+    const edital = await this.editalRepository.findOne({ where: { id: editalId } });
+    if (!edital) {
+      throw new NotFoundException('Edital não encontrado no banco');
+    }
+
+    await this.userFavoriteRepository.save({
+      userId: user.id,
+      editalId: editalId,
+    });
+    return { isFavorite: true };
   }
 
   async getById(id: number): Promise<Edital> {

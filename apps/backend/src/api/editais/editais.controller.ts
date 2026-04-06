@@ -36,4 +36,13 @@ export class EditaisController {
   async getById(@Param('id', ParseIntPipe) id: number) {
     return this.editaisService.getById(id);
   }
+
+  @Post(':id/favorite')
+  @ApiOperation({ summary: 'Alterna status de favorito de um edital' })
+  async toggleFavorite(
+    @CurrentUser() user: User,
+    @Param('id', ParseIntPipe) id: number
+  ) {
+    return this.editaisService.toggleFavorite(user, id);
+  }
 }
