@@ -4,7 +4,9 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { UserInterest } from './user-interest.entity';
 
 @Entity('users')
 export class User {
@@ -27,6 +29,9 @@ export class User {
     default: () => 'ARRAY[]::text[]',
   })
   profileKeywords: string[];
+
+  @OneToMany(() => UserInterest, (interest) => interest.user)
+  interests: UserInterest[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
