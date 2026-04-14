@@ -115,6 +115,8 @@ Senhas são armazenadas com **Argon2** (argon2id) e **salt no final** (password 
 - `GET /editais/coleta/status` — status da última coleta.
 - `GET /user/profile` — lê palavras-chave de perfil de relevância.
 - `PATCH /user/profile` — atualiza palavras-chave do perfil.
+- `PATCH /user/me` — atualiza `username` e/ou `password` do usuário autenticado.
+- `DELETE /user/me` — desativa a conta autenticada.
 - `GET /ops/health` — health agregado de backend + scraper.
 - `GET /ops/metrics` — métricas de integração backend->scraper.
 
@@ -131,6 +133,10 @@ Todos os endpoints acima (exceto auth/registro/login) exigem JWT.
   - perfil de relevância por palavras-chave
   - score de relevância por edital
   - status operacional do scraper
+- **`/app/settings`** — Configurações do usuário:
+  - atualização de username
+  - atualização de senha
+  - desativação de conta
 - Logout redireciona para a landing (`/`).
 
 ## IA local (resumo e tags)

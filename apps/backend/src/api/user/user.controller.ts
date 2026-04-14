@@ -1,8 +1,15 @@
-import { Controller, Post, Get, Body, UseGuards, Patch } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Patch, Delete, HttpCode } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { UserService } from './services/user.service';
-import { CreateUserDto, UpdateUserProfileDto } from './dtos';
-import { ApiCreateUser, ApiGetMe, ApiGetProfile, ApiUpdateProfile } from './docs/user.swagger';
+import { CreateUserDto, UpdateUserAccountDto, UpdateUserProfileDto } from './dtos';
+import {
+  ApiCreateUser,
+  ApiDeactivateAccount,
+  ApiGetMe,
+  ApiGetProfile,
+  ApiUpdateAccount,
+  ApiUpdateProfile,
+} from './docs/user.swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from './entities/user.entity';
@@ -45,5 +52,23 @@ export class UserController {
     return {
       profileKeywords: await this.userService.updateProfileKeywords(user.id, dto.profileKeywords),
     };
+  }
+
+  @Patch('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiUpdateAccount()
+  async updateMe(
+    @CurrentUser() user: User,
+    @Body() dto: UpdateUserAccountDto
+  ) {
+    return this.userService.updateAccount(user.id, dto);
+  }
+
+  @Delete('me')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(204)
+  @ApiDeactivateAccount()
+  async deactivate(@CurrentUser() user: User) {
+    await this.userService.deactivate(user.id);
   }
 }

@@ -20,6 +20,7 @@ type AuthContextValue = AuthState & {
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   setError: (err: string | null) => void;
 };
 
@@ -78,6 +79,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    const me = await api.getMe();
+    setUser(me);
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -87,8 +93,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       register,
       logout,
+      refreshUser,
     }),
-    [user, loading, error, login, register, logout]
+    [user, loading, error, login, register, logout, refreshUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

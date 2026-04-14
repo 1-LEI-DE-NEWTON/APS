@@ -11,11 +11,15 @@ export class UserRepository {
   ) {}
 
   async findByUsername(username: string): Promise<User | null> {
-    return this.repo.findOne({ where: { username } });
+    return this.repo.findOne({ where: { username, isDrop: false } });
   }
 
   async findById(id: string): Promise<User | null> {
-    return this.repo.findOne({ where: { id } });
+    return this.repo.findOne({ where: { id, isDrop: false } });
+  }
+
+  async deactivate(id: string): Promise<void> {
+    await this.repo.update({ id }, { isDrop: true });
   }
 
   async save(user: User): Promise<User> {
@@ -24,6 +28,13 @@ export class UserRepository {
 
   async updateProfileKeywords(userId: string, profileKeywords: string[]): Promise<void> {
     await this.repo.update({ id: userId }, { profileKeywords });
+  }
+
+  async updateAccount(
+    userId: string,
+    data: { username?: string; passwordHash?: string; passwordSalt?: string }
+  ): Promise<void> {
+    await this.repo.update({ id: userId }, data);
   }
 
   async create(data: Partial<User>): Promise<User> {

@@ -1,6 +1,6 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { UserRepository } from '../repository/user.repository';
-import { CreateUserDto } from '../dtos';
+import { CreateUserDto, UpdateUserAccountDto } from '../dtos';
 import { User } from '../entities/user.entity';
 import * as crypto from 'crypto';
 import * as argon2 from 'argon2';
@@ -14,16 +14,10 @@ export class UserService {
     if (existing) {
       throw new ConflictException('Username já está em uso');
     }
-    const salt = crypto.randomBytes(32).toString('hex');
-    const passwordWithSalt = dto.password + salt;
-    const passwordHash = await argon2.hash(passwordWithSalt, {
-      type: argon2.argon2id,
-      memoryCost: 65536,
-      timeCost: 3,
-    });
+    const { salt, hash } = await this.hashPassword(dto.password);
     const user = await this.userRepository.create({
       username: dto.username,
-      passwordHash,
+      passwordHash: hash,
       passwordSalt: salt,
       profileKeywords: [],
     });
@@ -56,5 +50,53 @@ export class UserService {
     );
     await this.userRepository.updateProfileKeywords(userId, normalized);
     return normalized;
+  }
+
+  async updateAccount(
+    userId: string,
+    dto: UpdateUserAccountDto
+  ): Promise<Omit<User, 'passwordHash' | 'passwordSalt'>> {
+    const updates: { username?: string; passwordHash?: string; passwordSalt?: string } = {};
+
+    if (dto.username) {
+      const normalizedUsername = dto.username.trim();
+      const existing = await this.userRepository.findByUsername(normalizedUsername);
+      if (existing && existing.id !== userId) {
+        throw new ConflictException('Username já está em uso');
+      }
+      updates.username = normalizedUsername;
+    }
+
+    if (dto.password) {
+      const { salt, hash } = await this.hashPassword(dto.password);
+      updates.passwordSalt = salt;
+      updates.passwordHash = hash;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await this.userRepository.updateAccount(userId, updates);
+    }
+
+    const updatedUser = await this.userRepository.findById(userId);
+    if (!updatedUser) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+    const { passwordHash, passwordSalt, ...result } = updatedUser;
+    return result;
+  }
+
+  async deactivate(userId: string): Promise<void> {
+    await this.userRepository.deactivate(userId);
+  }
+
+  private async hashPassword(password: string): Promise<{ salt: string; hash: string }> {
+    const salt = crypto.randomBytes(32).toString('hex');
+    const passwordWithSalt = password + salt;
+    const hash = await argon2.hash(passwordWithSalt, {
+      type: argon2.argon2id,
+      memoryCost: 65536,
+      timeCost: 3,
+    });
+    return { salt, hash };
   }
 }

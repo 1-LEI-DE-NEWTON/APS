@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   getEditais,
@@ -15,6 +16,7 @@ import {
 import styles from './HomePage.module.css';
 
 export default function HomePage() {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [items, setItems] = useState<Edital[]>([]);
   const [loading, setLoading] = useState(true);
@@ -164,6 +166,13 @@ export default function HomePage() {
         </div>
         <div className={styles.userRow}>
           <span className={styles.username}>{user?.username}</span>
+          <button
+            type="button"
+            onClick={() => navigate('/app/settings')}
+            className={styles.logoutBtn}
+          >
+            Configurações do usuário
+          </button>
           <button type="button" onClick={handleLogout} className={styles.logoutBtn}>
             Sair
           </button>

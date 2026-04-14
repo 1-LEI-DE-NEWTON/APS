@@ -53,6 +53,11 @@ export type UserProfileResponse = {
   profileKeywords: string[];
 };
 
+export type UpdateUserAccountPayload = {
+  username?: string;
+  password?: string;
+};
+
 export type OpsHealthResponse = {
   status: 'ok' | 'degraded';
   timestamp: string;
@@ -188,6 +193,19 @@ export async function updateUserProfile(profileKeywords: string[]): Promise<User
   return res.json();
 }
 
+export async function updateUserAccount(payload: UpdateUserAccountPayload): Promise<UserMe> {
+  const res = await fetchWithAuth(`${API_BASE}/user/me`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? 'Falha ao atualizar conta');
+  }
+  return res.json();
+}
+
 export async function createUser(username: string, password: string): Promise<UserMe> {
   const res = await fetch(`${API_BASE}/user`, {
     method: 'POST',
@@ -261,4 +279,14 @@ export async function getOpsHealth(): Promise<OpsHealthResponse> {
     throw new Error(err.message ?? 'Falha ao buscar health operacional');
   }
   return res.json();
+}
+
+export async function deactivateAccount(): Promise<void> {
+  const res = await fetchWithAuth(`${API_BASE}/user/me`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? 'Falha ao desativar conta');
+  }
 }

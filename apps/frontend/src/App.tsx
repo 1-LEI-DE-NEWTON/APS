@@ -5,6 +5,7 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
 import SobrePage from './pages/SobrePage';
+import UserSettingsPage from './pages/UserSettingsPage';
 
 export default function App() {
   return (
@@ -18,6 +19,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <HomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/settings"
+          element={
+            <ProtectedRoute>
+              <UserSettingsPage />
             </ProtectedRoute>
           }
         />

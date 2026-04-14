@@ -30,6 +30,9 @@ export class User {
   })
   profileKeywords: string[];
 
+  @Column({ name: 'is_drop', default: false })
+  isDrop: boolean;
+
   @OneToMany(() => UserInterest, (interest) => interest.user)
   interests: UserInterest[];
 
