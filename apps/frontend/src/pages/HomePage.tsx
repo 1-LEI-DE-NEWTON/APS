@@ -151,6 +151,23 @@ export default function HomePage() {
     }
   };
 
+  const handleRemoveKeyword = async (keyword: string) => {
+    setSavingProfile(true);
+    setError(null);
+    try {
+      const nextKeywords = profileKeywords.filter((entry) => entry !== keyword);
+      const response = await updateUserProfile(nextKeywords);
+      setProfileKeywords(response.profileKeywords);
+      setProfileInput(response.profileKeywords.join(', '));
+      await loadItems();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao remover palavra-chave';
+      setError(message);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   const collectionSummary = useMemo(() => {
     if (!latestCollection) return 'Nenhuma coleta registrada ainda.';
     const finished = latestCollection.finished_at ?? 'em execução';
@@ -238,7 +255,17 @@ export default function HomePage() {
             <div className={styles.tagsRow}>
               {profileKeywords.map((tag) => (
                 <span key={`profile-${tag}`} className={styles.aiTag}>
-                  {tag}
+                  <span>{tag}</span>
+                  <button
+                    type="button"
+                    className={styles.tagRemoveBtn}
+                    onClick={() => handleRemoveKeyword(tag)}
+                    title={`Remover ${tag}`}
+                    aria-label={`Remover ${tag}`}
+                    disabled={savingProfile}
+                  >
+                    X
+                  </button>
                 </span>
               ))}
             </div>
