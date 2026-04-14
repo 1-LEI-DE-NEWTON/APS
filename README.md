@@ -49,7 +49,7 @@ cp .env.example .env
 
 ### Frontend
 
-O frontend usa proxy para `/api` apontando para `http://localhost:3000`. Não é obrigatório configurar nada além de:
+O frontend usa proxy para `/api` apontando para a porta definida em `apps/backend/.env` (`PORT`, fallback `3000`). Não é obrigatório configurar nada além de:
 
 ```bash
 cd apps/frontend
@@ -61,6 +61,13 @@ Para usar outra URL da API:
 ```bash
 # .env ou .env.local
 VITE_API_URL=http://localhost:3000
+```
+
+Para forçar um alvo específico do proxy do Vite em desenvolvimento:
+
+```bash
+# apps/frontend/.env.local
+VITE_API_PROXY_TARGET=http://localhost:3001
 ```
 
 ## Executando
