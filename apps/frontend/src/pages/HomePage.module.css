@@ -315,6 +315,10 @@
   align-items: start;
 }
 
+.cardMainInfo {
+  min-width: 0;
+}
+
 .cardSource {
   display: inline-block;
   margin-bottom: 0.6rem;
@@ -329,6 +333,7 @@
   font-size: 1.08rem;
   line-height: 1.25;
   color: #f5f8f2;
+  overflow-wrap: anywhere;
 }
 
 .cardTag {

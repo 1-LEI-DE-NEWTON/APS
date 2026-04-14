@@ -339,9 +339,12 @@ export default function HomePage() {
                   className={styles.card}
                 >
                   <div className={styles.cardHeader}>
-                    <div>
+                    <div className={styles.cardMainInfo}>
                       <span className={styles.cardSource}>{edital.orgao}</span>
                       <h2>{edital.titulo}</h2>
+                      <span className={styles.cardTag}>
+                        {edital.data_fim ? 'Prazo definido' : 'Sem prazo informado'}
+                      </span>
                     </div>
                     <div className={styles.cardTagGroup}>
                       <button
@@ -355,7 +358,6 @@ export default function HomePage() {
                       {typeof edital.relevance_score === 'number' ? (
                         <span className={styles.scoreTag}>{edital.relevance_score}% relevante</span>
                       ) : null}
-                      <span className={styles.cardTag}>{edital.data_fim ? 'Prazo definido' : 'Sem prazo informado'}</span>
                     </div>
                   </div>
                   {edital.resumo_ia ? (
