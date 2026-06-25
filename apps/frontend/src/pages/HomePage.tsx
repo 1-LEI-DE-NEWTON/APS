@@ -3,23 +3,36 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   getEditais,
+  getCandidaturas,
   getLatestCollectionStatus,
   getOpsHealth,
   getUserProfile,
   triggerCollection,
   updateUserProfile,
   toggleFavorite,
+  setApplicationStatus,
+  removeApplicationStatus,
+  setReminder,
+  removeReminder,
+  type ApplicationStatus,
   type CollectionStatus,
   type Edital,
   type OpsHealthResponse,
 } from '../lib/api';
+import EditalCard, { STATUS_OPTIONS } from '../components/EditalCard';
+import EditalChatModal from '../components/EditalChatModal';
 import styles from './HomePage.module.css';
+
+type Tab = 'editais' | 'candidaturas';
 
 export default function HomePage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [items, setItems] = useState<Edital[]>([]);
+  const [candidaturas, setCandidaturas] = useState<Edital[]>([]);
+  const [tab, setTab] = useState<Tab>('editais');
   const [loading, setLoading] = useState(true);
+  const [loadingCandidaturas, setLoadingCandidaturas] = useState(false);
   const [loadingCollection, setLoadingCollection] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
@@ -32,14 +45,7 @@ export default function HomePage() {
   const [profileKeywords, setProfileKeywords] = useState<string[]>([]);
   const [profileInput, setProfileInput] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
-  const visibleSources = new Set(items.map((item) => item.orgao)).size;
-
-  const truncateDescription = (text: string, maxLength = 180) => {
-    if (text.length <= maxLength) {
-      return text;
-    }
-    return `${text.slice(0, maxLength).trimEnd()}...`;
-  };
+  const [chatEdital, setChatEdital] = useState<Edital | null>(null);
 
   const handleLogout = async () => {
     await logout();
@@ -63,6 +69,18 @@ export default function HomePage() {
       setError(message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCandidaturas = async () => {
+    setLoadingCandidaturas(true);
+    try {
+      setCandidaturas(await getCandidaturas());
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao carregar candidaturas';
+      setError(message);
+    } finally {
+      setLoadingCandidaturas(false);
     }
   };
 
@@ -96,7 +114,15 @@ export default function HomePage() {
 
   useEffect(() => {
     void loadMeta();
+    void loadCandidaturas();
   }, []);
+
+  useEffect(() => {
+    if (tab === 'candidaturas') {
+      void loadCandidaturas();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
 
   const handleRunCollection = async () => {
     setLoadingCollection(true);
@@ -113,20 +139,50 @@ export default function HomePage() {
     }
   };
 
-  const handleToggleFavorite = async (e: React.MouseEvent, id: number) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const patchEdital = (id: number, patch: Partial<Edital>) => {
+    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+    setCandidaturas((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+  };
+
+  const handleToggleFavorite = async (id: number) => {
     try {
       const { isFavorite } = await toggleFavorite(id);
-      setItems((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, isFavorite } : item))
-      );
+      patchEdital(id, { isFavorite });
       if (favoritesOnly && !isFavorite) {
         setItems((prev) => prev.filter((item) => item.id !== id));
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao favoritar';
-      setError(message);
+      setError(err instanceof Error ? err.message : 'Erro ao favoritar');
+    }
+  };
+
+  const handleChangeStatus = async (id: number, nextStatus: ApplicationStatus | null) => {
+    setError(null);
+    try {
+      if (nextStatus === null) {
+        await removeApplicationStatus(id);
+      } else {
+        await setApplicationStatus(id, nextStatus);
+      }
+      patchEdital(id, { applicationStatus: nextStatus });
+      await loadCandidaturas();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar candidatura');
+    }
+  };
+
+  const handleChangeReminder = async (id: number, daysBefore: number | null) => {
+    setError(null);
+    try {
+      if (daysBefore === null) {
+        await removeReminder(id);
+        patchEdital(id, { reminder: null });
+      } else {
+        const info = await setReminder(id, daysBefore);
+        patchEdital(id, { reminder: info });
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao definir lembrete');
     }
   };
 
@@ -174,6 +230,26 @@ export default function HomePage() {
     return `Última coleta #${latestCollection.id} - ${latestCollection.status} - finalizada: ${finished}`;
   }, [latestCollection]);
 
+  const candidaturaGroups = useMemo(
+    () =>
+      STATUS_OPTIONS.map((opt) => ({
+        ...opt,
+        items: candidaturas.filter((item) => item.applicationStatus === opt.value),
+      })).filter((group) => group.items.length > 0),
+    [candidaturas]
+  );
+
+  const renderCard = (edital: Edital) => (
+    <EditalCard
+      key={edital.id}
+      edital={edital}
+      onToggleFavorite={handleToggleFavorite}
+      onChangeStatus={handleChangeStatus}
+      onChangeReminder={handleChangeReminder}
+      onOpenChat={setChatEdital}
+    />
+  );
+
   return (
     <div className={styles.wrapper}>
       <header className={styles.header}>
@@ -218,9 +294,9 @@ export default function HomePage() {
             <p>Itens filtrados na consulta atual.</p>
           </article>
           <article className={styles.metricCard}>
-            <span className={styles.metricLabel}>Fontes ativas</span>
-            <strong>{visibleSources}</strong>
-            <p>Orgaos presentes no resultado visivel.</p>
+            <span className={styles.metricLabel}>Acompanhando</span>
+            <strong>{candidaturas.length}</strong>
+            <p>Editais no seu pipeline de candidaturas.</p>
           </article>
           <article className={styles.metricCard}>
             <span className={styles.metricLabel}>Status operacional</span>
@@ -283,113 +359,101 @@ export default function HomePage() {
           </button>
         </section>
 
-        <section className={styles.actions}>
-          <div className={styles.searchForm}>
-            <input
-              type="text"
-              placeholder="Buscar por título ou descrição"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              className={styles.input}
-            />
-            <select
-              value={orgao}
-              onChange={(event) => setOrgao(event.target.value)}
-              className={styles.select}
-            >
-              <option value="">Todas as fontes</option>
-              <option value="CNPq">CNPq</option>
-              <option value="FINEP">FINEP</option>
-              <option value="FUNCAP">FUNCAP</option>
-            </select>
-            <select
-              value={status}
-              onChange={(event) => setStatus(event.target.value as 'abertos' | 'encerrados')}
-              className={styles.select}
-            >
-              <option value="abertos">Abertos</option>
-              <option value="encerrados">Encerrados</option>
-            </select>
-            <label className={styles.checkboxContainer}>
-              <input
-                type="checkbox"
-                checked={favoritesOnly}
-                onChange={(e) => setFavoritesOnly(e.target.checked)}
-              />
-              Apenas favoritos
-            </label>
-          </div>
+        <section className={styles.tabBar}>
+          <button
+            type="button"
+            className={`${styles.tabBtn} ${tab === 'editais' ? styles.tabActive : ''}`}
+            onClick={() => setTab('editais')}
+          >
+            Editais
+          </button>
+          <button
+            type="button"
+            className={`${styles.tabBtn} ${tab === 'candidaturas' ? styles.tabActive : ''}`}
+            onClick={() => setTab('candidaturas')}
+          >
+            Minhas candidaturas{candidaturas.length > 0 ? ` (${candidaturas.length})` : ''}
+          </button>
         </section>
+
+        {tab === 'editais' ? (
+          <section className={styles.actions}>
+            <div className={styles.searchForm}>
+              <input
+                type="text"
+                placeholder="Buscar por título ou descrição"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                className={styles.input}
+              />
+              <select
+                value={orgao}
+                onChange={(event) => setOrgao(event.target.value)}
+                className={styles.select}
+              >
+                <option value="">Todas as fontes</option>
+                <option value="CNPq">CNPq</option>
+                <option value="FINEP">FINEP</option>
+                <option value="FUNCAP">FUNCAP</option>
+              </select>
+              <select
+                value={status}
+                onChange={(event) => setStatus(event.target.value as 'abertos' | 'encerrados')}
+                className={styles.select}
+              >
+                <option value="abertos">Abertos</option>
+                <option value="encerrados">Encerrados</option>
+              </select>
+              <label className={styles.checkboxContainer}>
+                <input
+                  type="checkbox"
+                  checked={favoritesOnly}
+                  onChange={(e) => setFavoritesOnly(e.target.checked)}
+                />
+                Apenas favoritos
+              </label>
+            </div>
+          </section>
+        ) : null}
 
         {error ? <p className={styles.error}>{error}</p> : null}
 
-        {loading ? (
-          <p className={styles.hint}>Carregando editais...</p>
+        {tab === 'editais' ? (
+          loading ? (
+            <p className={styles.hint}>Carregando editais...</p>
+          ) : (
+            <section className={styles.list}>
+              {items.length === 0 ? (
+                <p className={styles.hint}>Nenhum edital encontrado.</p>
+              ) : (
+                items.map(renderCard)
+              )}
+            </section>
+          )
+        ) : loadingCandidaturas ? (
+          <p className={styles.hint}>Carregando candidaturas...</p>
+        ) : candidaturas.length === 0 ? (
+          <p className={styles.hint}>
+            Você ainda não acompanha nenhum edital. Na aba <strong>Editais</strong>, use o seletor
+            "Candidatura" de um edital para começar a acompanhar.
+          </p>
         ) : (
-          <section className={styles.list}>
-            {items.length === 0 ? (
-              <p className={styles.hint}>Nenhum edital encontrado.</p>
-            ) : (
-              items.map((edital) => (
-                <a
-                  key={edital.id}
-                  href={edital.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={styles.card}
-                >
-                  <div className={styles.cardHeader}>
-                    <div className={styles.cardMainInfo}>
-                      <span className={styles.cardSource}>{edital.orgao}</span>
-                      <h2>{edital.titulo}</h2>
-                      <span className={styles.cardTag}>
-                        {edital.data_fim ? 'Prazo definido' : 'Sem prazo informado'}
-                      </span>
-                    </div>
-                    <div className={styles.cardTagGroup}>
-                      <button
-                        type="button"
-                        onClick={(e) => handleToggleFavorite(e, edital.id)}
-                        className={`${styles.favoriteBtn} ${edital.isFavorite ? styles.favoriteActive : ''}`}
-                        title={edital.isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
-                      >
-                        {edital.isFavorite ? '★' : '☆'}
-                      </button>
-                      {typeof edital.relevance_score === 'number' ? (
-                        <span className={styles.scoreTag}>{edital.relevance_score}% relevante</span>
-                      ) : null}
-                    </div>
-                  </div>
-                  {edital.resumo_ia ? (
-                    <>
-                      <p className={styles.aiSummary}>{truncateDescription(edital.resumo_ia, 220)}</p>
-                      <span className={styles.aiBadge}>Resumo gerado por IA</span>
-                    </>
-                  ) : (
-                    <p>{truncateDescription(edital.descricao)}</p>
-                  )}
-                  {edital.tags_ia && edital.tags_ia.length > 0 ? (
-                    <div className={styles.tagsRow}>
-                      {edital.tags_ia.map((tag) => (
-                        <span key={`${edital.id}-${tag}`} className={styles.aiTag}>
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                  <p className={styles.meta}>
-                    Início: {edital.data_inicio ?? 'não informado'} | Fim: {edital.data_fim ?? 'não informado'}
-                  </p>
-                  <div className={styles.cardFooter}>
-                    <span className={styles.cardAction}>Abrir documento</span>
-                    <span className={styles.cardLinkHint}>Documento oficial</span>
-                  </div>
-                </a>
-              ))
-            )}
-          </section>
+          <div className={styles.pipeline}>
+            {candidaturaGroups.map((group) => (
+              <div key={group.value} className={styles.pipelineGroup}>
+                <h3 className={styles.pipelineTitle}>
+                  {group.label} <span>({group.items.length})</span>
+                </h3>
+                <section className={styles.list}>{group.items.map(renderCard)}</section>
+              </div>
+            ))}
+          </div>
         )}
       </main>
+
+      {chatEdital ? (
+        <EditalChatModal edital={chatEdital} onClose={() => setChatEdital(null)} />
+      ) : null}
     </div>
   );
 }

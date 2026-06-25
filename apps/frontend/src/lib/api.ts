@@ -14,6 +14,21 @@ export type UserMe = {
   updatedAt: string;
 };
 
+export type ApplicationStatus =
+  | 'interesse'
+  | 'inscrever'
+  | 'inscrito'
+  | 'concluido'
+  | 'descartado';
+
+export type ReminderInfo = {
+  daysBefore: number;
+  dueDate: string | null;
+  daysLeft: number | null;
+  isApproaching: boolean;
+  isOverdue: boolean;
+};
+
 export type Edital = {
   id: number;
   titulo: string;
@@ -29,6 +44,25 @@ export type Edital = {
   criado_em: string;
   relevance_score?: number | null;
   isFavorite?: boolean;
+  applicationStatus?: ApplicationStatus | null;
+  reminder?: ReminderInfo | null;
+};
+
+export type ChatTurn = {
+  role: 'user' | 'assistant';
+  content: string;
+};
+
+export type ChatEditalResponse = {
+  reply: string;
+  provider: string;
+  model: string;
+};
+
+export type AssistantStatus = {
+  enabled: boolean;
+  provider: string;
+  model: string;
 };
 
 export type ListEditaisResponse = {
@@ -250,6 +284,96 @@ export async function toggleFavorite(editalId: number): Promise<{ isFavorite: bo
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message ?? 'Falha ao favoritar edital');
+  }
+  return res.json();
+}
+
+export async function getAssistantStatus(): Promise<AssistantStatus> {
+  const res = await fetchWithAuth(`${API_BASE}/editais/assistente/status`);
+  if (!res.ok) {
+    throw new Error('Falha ao consultar status do assistente');
+  }
+  return res.json();
+}
+
+export async function chatWithEdital(
+  editalId: number,
+  message: string,
+  history: ChatTurn[]
+): Promise<ChatEditalResponse> {
+  const res = await fetchWithAuth(`${API_BASE}/editais/${editalId}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, history }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? 'Falha ao consultar o assistente de IA');
+  }
+  return res.json();
+}
+
+export async function setApplicationStatus(
+  editalId: number,
+  status: ApplicationStatus
+): Promise<{ status: ApplicationStatus }> {
+  const res = await fetchWithAuth(`${API_BASE}/tracking/editais/${editalId}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? 'Falha ao atualizar candidatura');
+  }
+  return res.json();
+}
+
+export async function removeApplicationStatus(
+  editalId: number
+): Promise<{ status: null }> {
+  const res = await fetchWithAuth(`${API_BASE}/tracking/editais/${editalId}/status`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? 'Falha ao remover candidatura');
+  }
+  return res.json();
+}
+
+export async function setReminder(
+  editalId: number,
+  daysBefore: number
+): Promise<ReminderInfo> {
+  const res = await fetchWithAuth(`${API_BASE}/tracking/editais/${editalId}/reminder`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ daysBefore }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? 'Falha ao definir lembrete');
+  }
+  return res.json();
+}
+
+export async function removeReminder(editalId: number): Promise<{ reminder: null }> {
+  const res = await fetchWithAuth(`${API_BASE}/tracking/editais/${editalId}/reminder`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? 'Falha ao remover lembrete');
+  }
+  return res.json();
+}
+
+export async function getCandidaturas(): Promise<Edital[]> {
+  const res = await fetchWithAuth(`${API_BASE}/tracking/candidaturas`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message ?? 'Falha ao buscar candidaturas');
   }
   return res.json();
 }

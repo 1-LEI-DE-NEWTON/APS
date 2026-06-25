@@ -514,6 +514,191 @@
   height: 1.1rem;
 }
 
+/* ===== Abas (Editais / Minhas candidaturas) ===== */
+.tabBar {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1.2rem 0 0.4rem;
+  flex-wrap: wrap;
+}
+
+.tabBtn {
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #cdd6d0;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.tabBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tabActive {
+  border-color: rgba(20, 184, 166, 0.5);
+  background: rgba(20, 184, 166, 0.16);
+  color: #8ce9dc;
+}
+
+/* ===== Pipeline de candidaturas ===== */
+.pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+}
+
+.pipelineTitle {
+  margin: 0 0 0.8rem;
+  font-size: 1rem;
+  color: #f3f7f1;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pipelineTitle span {
+  color: #8ce9dc;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+/* ===== Badges no card (status de candidatura e lembrete) ===== */
+.cardBadges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.cardBadges .cardTag {
+  margin-top: 0;
+}
+
+.statusBadge {
+  display: inline-flex;
+  white-space: nowrap;
+  padding: 0.32rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.status_interesse {
+  background: rgba(157, 217, 255, 0.12);
+  color: #a5def9;
+  border-color: rgba(157, 217, 255, 0.3);
+}
+
+.status_inscrever {
+  background: rgba(245, 158, 11, 0.14);
+  color: #fbcd6b;
+  border-color: rgba(245, 158, 11, 0.32);
+}
+
+.status_inscrito {
+  background: rgba(20, 184, 166, 0.16);
+  color: #8ce9dc;
+  border-color: rgba(140, 233, 220, 0.32);
+}
+
+.status_concluido {
+  background: rgba(74, 222, 128, 0.16);
+  color: #a7f3c0;
+  border-color: rgba(74, 222, 128, 0.32);
+}
+
+.status_descartado {
+  background: rgba(255, 255, 255, 0.06);
+  color: #98a39c;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.reminderBadge {
+  display: inline-flex;
+  white-space: nowrap;
+  padding: 0.32rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.06);
+  color: #c9d2cc;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.reminderApproaching {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fcd277;
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.reminderOverdue {
+  background: rgba(244, 63, 94, 0.16);
+  color: #ffb3ad;
+  border-color: rgba(244, 63, 94, 0.34);
+}
+
+/* ===== Barra de ações do card (candidatura + lembrete) ===== */
+.actionsBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 0.9rem;
+}
+
+.controlField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  flex: 1;
+  min-width: 130px;
+}
+
+.controlField span {
+  color: #93a39b;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.controlSelect {
+  height: 2.4rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #eef4ef;
+  padding: 0 0.6rem;
+  font-size: 0.85rem;
+}
+
+.controlSelect:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.assistantBtn {
+  border: 1px solid rgba(157, 217, 255, 0.3);
+  background: rgba(157, 217, 255, 0.08);
+  color: #cfe8ff;
+  padding: 0.5rem 0.85rem;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.assistantBtn:hover {
+  background: rgba(157, 217, 255, 0.16);
+}
+
+.cardAction {
+  text-decoration: none;
+}
+
 @media (max-width: 920px) {
   .heroPanel,
   .metricsGrid {
