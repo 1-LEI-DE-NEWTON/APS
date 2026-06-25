@@ -5,8 +5,13 @@ import { Repository, In } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 import { OpsMetricsService } from '../../ops/services/ops-metrics.service';
 import { QueryEditaisDto } from '../dtos/query-editais.dto';
+import { ChatEditalDto } from '../dtos/chat-edital.dto';
 import { Edital as EditalEntity } from '../entities/edital.entity';
 import { UserFavorite } from '../../user/entities/user-favorite.entity';
+import { LlmService, ChatMessage } from '../../llm/llm.service';
+import { TrackingService } from '../../tracking/services/tracking.service';
+import { ApplicationStatus } from '../../user/entities/user-application.entity';
+import { ReminderInfo } from '../../tracking/services/tracking.service';
 
 type Edital = {
   id: number;
@@ -23,6 +28,14 @@ type Edital = {
   criado_em: string;
   relevance_score?: number | null;
   isFavorite?: boolean;
+  applicationStatus?: ApplicationStatus | null;
+  reminder?: ReminderInfo | null;
+};
+
+type ChatEditalResponse = {
+  reply: string;
+  provider: string;
+  model: string;
 };
 
 type ListEditaisResponse = {
@@ -48,6 +61,8 @@ export class EditaisService {
   constructor(
     private readonly configService: ConfigService,
     private readonly opsMetricsService: OpsMetricsService,
+    private readonly llmService: LlmService,
+    private readonly trackingService: TrackingService,
     @InjectRepository(EditalEntity)
     private readonly editalRepository: Repository<EditalEntity>,
     @InjectRepository(UserFavorite)
@@ -80,12 +95,25 @@ export class EditaisService {
       .map((entry) => this.normalize(entry))
       .filter((entry) => entry.length > 0);
 
-    payload.items = payload.items.map((item) => ({
-      ...item,
-      isFavorite: favoriteIds.has(item.id),
-      relevance_score:
-        profileKeywords.length > 0 ? this.calculateRelevanceScore(item, profileKeywords) : null,
-    }));
+    const [statusMap, reminderMap] = await Promise.all([
+      this.trackingService.getStatusMap(user.id),
+      this.trackingService.getReminderMap(user.id),
+    ]);
+
+    payload.items = payload.items.map((item) => {
+      const reminderDays = reminderMap.get(item.id);
+      return {
+        ...item,
+        isFavorite: favoriteIds.has(item.id),
+        relevance_score:
+          profileKeywords.length > 0 ? this.calculateRelevanceScore(item, profileKeywords) : null,
+        applicationStatus: statusMap.get(item.id) ?? null,
+        reminder:
+          reminderDays !== undefined
+            ? this.trackingService.buildReminderInfo(reminderDays, item.data_fim)
+            : null,
+      };
+    });
 
     if (query.favoritesOnly) {
       payload.items = payload.items.filter((item) => item.isFavorite);
@@ -134,6 +162,62 @@ export class EditaisService {
     const endpoint = `/editais/${id}`;
     const response = await this.safeFetch(`${this.scraperBaseUrl}${endpoint}`, endpoint);
     return response.json() as Promise<Edital>;
+  }
+
+  getAssistantInfo() {
+    return this.llmService.info;
+  }
+
+  async chatAboutEdital(id: number, dto: ChatEditalDto): Promise<ChatEditalResponse> {
+    const edital = await this.editalRepository.findOne({ where: { id } });
+    if (!edital) {
+      throw new NotFoundException('Edital não encontrado no banco');
+    }
+
+    const history = (dto.history ?? []).map(
+      (turn): ChatMessage => ({ role: turn.role, content: turn.content }),
+    );
+
+    const messages: ChatMessage[] = [
+      { role: 'system', content: this.buildAssistantSystemPrompt(edital) },
+      ...history,
+      { role: 'user', content: dto.message },
+    ];
+
+    const reply = await this.llmService.chat(messages);
+    const info = this.llmService.info;
+
+    return {
+      reply:
+        reply || 'Não consegui gerar uma resposta agora. Tente reformular a pergunta.',
+      provider: info.provider,
+      model: info.model,
+    };
+  }
+
+  private buildAssistantSystemPrompt(edital: EditalEntity): string {
+    const campos = [
+      `Título: ${edital.titulo ?? 'não informado'}`,
+      `Órgão: ${edital.orgao ?? 'não informado'}`,
+      `Data de início: ${edital.dataInicio ?? 'não informada'}`,
+      `Data de fim (prazo): ${edital.dataFim ?? 'não informada'}`,
+      edital.resumoIa ? `Resumo: ${edital.resumoIa}` : null,
+      edital.tagsIa && edital.tagsIa.length > 0 ? `Tags: ${edital.tagsIa.join(', ')}` : null,
+      `Descrição: ${edital.descricao ?? 'não informada'}`,
+      `URL oficial: ${edital.url ?? 'não informada'}`,
+    ]
+      .filter((linha): linha is string => Boolean(linha))
+      .join('\n');
+
+    return [
+      'Você é um assistente que tira dúvidas sobre um edital específico, em português do Brasil.',
+      'Responda de forma objetiva e SOMENTE com base nas informações do edital fornecidas abaixo.',
+      'Se a informação não constar no edital, diga claramente que ela não consta e oriente o usuário a consultar o documento oficial.',
+      'Não invente prazos, valores ou requisitos. Não use markdown nem listas longas; prefira respostas curtas.',
+      '',
+      '--- DADOS DO EDITAL ---',
+      campos,
+    ].join('\n');
   }
 
   async triggerCollection(): Promise<CollectionStatus> {

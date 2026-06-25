@@ -5,6 +5,8 @@ import { UserModule } from './api/user/user.module';
 import { AuthModule } from './api/auth/auth.module';
 import { EditaisModule } from './api/editais/editais.module';
 import { OpsModule } from './api/ops/ops.module';
+import { LlmModule } from './api/llm/llm.module';
+import { TrackingModule } from './api/tracking/tracking.module';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { OpsModule } from './api/ops/ops.module';
     AuthModule,
     EditaisModule,
     OpsModule,
+    LlmModule,
+    TrackingModule,
   ],
 })
 export class AppModule {}

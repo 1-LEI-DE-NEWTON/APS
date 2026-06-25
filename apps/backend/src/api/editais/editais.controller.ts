@@ -1,9 +1,10 @@
-import { Controller, Get, Param, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/entities/user.entity';
 import { QueryEditaisDto } from './dtos/query-editais.dto';
+import { ChatEditalDto } from './dtos/chat-edital.dto';
 import { EditaisService } from './services/editais.service';
 
 @ApiTags('editais')
@@ -31,6 +32,12 @@ export class EditaisController {
     return this.editaisService.getLatestCollectionStatus();
   }
 
+  @Get('assistente/status')
+  @ApiOperation({ summary: 'Informa se o assistente de IA está habilitado e qual modelo usa' })
+  getAssistantStatus() {
+    return this.editaisService.getAssistantInfo();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Retorna um edital por id' })
   async getById(@Param('id', ParseIntPipe) id: number) {
@@ -44,5 +51,11 @@ export class EditaisController {
     @Param('id', ParseIntPipe) id: number
   ) {
     return this.editaisService.toggleFavorite(user, id);
+  }
+
+  @Post(':id/chat')
+  @ApiOperation({ summary: 'Conversa com o assistente de IA sobre um edital específico' })
+  async chat(@Param('id', ParseIntPipe) id: number, @Body() dto: ChatEditalDto) {
+    return this.editaisService.chatAboutEdital(id, dto);
   }
 }

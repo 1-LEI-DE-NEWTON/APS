@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { EditaisController } from './editais.controller';
 import { EditaisService } from './services/editais.service';
 import { OpsModule } from '../ops/ops.module';
+import { LlmModule } from '../llm/llm.module';
+import { TrackingModule } from '../tracking/tracking.module';
 import { Edital } from './entities/edital.entity';
 import { UserFavorite } from '../user/entities/user-favorite.entity';
 
@@ -10,6 +12,8 @@ import { UserFavorite } from '../user/entities/user-favorite.entity';
   imports: [
     TypeOrmModule.forFeature([Edital, UserFavorite]),
     OpsModule,
+    LlmModule,
+    TrackingModule,
   ],
   controllers: [EditaisController],
   providers: [EditaisService],
