@@ -110,9 +110,16 @@ Senhas são armazenadas com **Argon2** (argon2id) e **salt no final** (password 
 
 ## Endpoints principais (backend)
 
-- `GET /editais` — lista editais com filtros (`orgao`, `q`, `status`, `limit`, `offset`).
+- `GET /editais` — lista editais com filtros (`orgao`, `q`, `status`, `limit`, `offset`). Cada item traz também `applicationStatus` (candidatura) e `reminder` (lembrete) do usuário.
 - `POST /editais/coleta` — dispara coleta imediata no scraper.
 - `GET /editais/coleta/status` — status da última coleta.
+- `GET /editais/assistente/status` — informa se o assistente de IA está habilitado e qual modelo usa.
+- `POST /editais/:id/chat` — conversa com o assistente de IA sobre um edital (`{ message, history }`).
+- `GET /tracking/candidaturas` — lista os editais que o usuário acompanha (pipeline de candidaturas).
+- `PUT /tracking/editais/:id/status` — define/atualiza o status de candidatura (`{ status }`).
+- `DELETE /tracking/editais/:id/status` — remove o acompanhamento.
+- `PUT /tracking/editais/:id/reminder` — define um lembrete de prazo (`{ daysBefore }`).
+- `DELETE /tracking/editais/:id/reminder` — remove o lembrete.
 - `GET /user/profile` — lê palavras-chave de perfil de relevância.
 - `PATCH /user/profile` — atualiza palavras-chave do perfil.
 - `PATCH /user/me` — atualiza `username` e/ou `password` do usuário autenticado.
@@ -133,6 +140,9 @@ Todos os endpoints acima (exceto auth/registro/login) exigem JWT.
   - perfil de relevância por palavras-chave
   - score de relevância por edital
   - status operacional do scraper
+  - **Assistente IA** por edital (chat) — botão "💬 Assistente IA" em cada card
+  - **Acompanhamento de candidaturas** — seletor de status por edital + aba "Minhas candidaturas" (pipeline)
+  - **Lembretes de prazo** — escolha "X dias antes" e veja o destaque "⏰ Faltam N dias" / "Prazo encerrado"
 - **`/app/settings`** — Configurações do usuário:
   - atualização de username
   - atualização de senha
@@ -158,3 +168,46 @@ ollama pull granite3-dense:2b
 ```
 
 Observação: a IA é opcional. Se `AI_ENABLED=false`, o sistema continua funcionando sem resumo/tags gerados.
+
+## Assistente de IA (chat do edital)
+
+Funcionalidade de IA com **modelo local** (sem serviços online por padrão). O backend
+NestJS expõe um chat que responde dúvidas sobre um edital específico usando apenas o
+conteúdo daquele edital. É totalmente parametrizável via `apps/backend/.env`:
+
+```bash
+LLM_ENABLED=true
+LLM_PROVIDER=ollama            # ollama (local) | openai (API compatível)
+LLM_BASE_URL=http://localhost:11434
+LLM_MODEL=granite3-dense:2b
+LLM_API_KEY=
+LLM_TIMEOUT_MS=30000
+LLM_TEMPERATURE=0.3
+```
+
+Com Ollama local:
+
+```bash
+ollama pull granite3-dense:2b
+```
+
+Para **comparar com uma LLM online**, basta trocar o provedor (nenhuma mudança de código):
+
+```bash
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_MODEL=gpt-4o-mini
+LLM_API_KEY=sk-xxxxxxxx
+```
+
+No frontend, o chat fica no botão "💬 Assistente IA" de cada edital.
+
+## Acompanhamento de candidaturas e lembretes (negócio)
+
+- **Acompanhamento de candidaturas**: cada usuário marca um status por edital
+  (`Tenho interesse` → `Vou me inscrever` → `Inscrito` → `Concluído` / `Descartado`).
+  A aba **"Minhas candidaturas"** mostra os editais agrupados por status (pipeline pessoal).
+- **Lembretes de prazo**: o usuário escolhe "X dias antes" do `data_fim`. A listagem
+  destaca automaticamente "⏰ Faltam N dias" quando o prazo se aproxima e "Prazo encerrado"
+  quando passa. Os dados ficam por usuário, nas tabelas `user_applications` e `user_reminders`
+  (criadas automaticamente pelo TypeORM em desenvolvimento).
